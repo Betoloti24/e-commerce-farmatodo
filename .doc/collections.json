@@ -1,0 +1,613 @@
+{
+	"info": {
+		"_postman_id": "b0a5ca1b-fb59-4060-8991-b1156dbf38c5",
+		"name": "API Gateway (Spring Boot 3.5.7)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "21644598",
+		"_collection_link": "https://grey-shuttle-949832.postman.co/workspace/My-Workspace~21f23722-d21d-496b-897b-500810f73423/collection/21644598-b0a5ca1b-fb59-4060-8991-b1156dbf38c5?action=share&source=collection_link&creator=21644598"
+	},
+	"item": [
+		{
+			"name": "Auth Controller (Public)",
+			"item": [
+				{
+					"name": "1. [POST] Register Client",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"rgonzalezs\",\n    \"password\": \"123456789\",\n    \"email\": \"roiberthgonzalez091d@gmail.com\",\n    \"firstName\": \"Alex\",\n    \"firstSurname\": \"Guzman\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{domain}}/api/v1/auth/register",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. [POST] Login & Get JWT",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.token) {",
+									"    pm.environment.set(\"JWT_TOKEN\", jsonData.token);",
+									"    pm.test(\"Token JWT guardado\", true);",
+									"} else {",
+									"    pm.test(\"Fallo al obtener JWT\", false);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"rgonzalezs\",\n    \"password\": \"123456789\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{domain}}/api/v1/auth/login",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Card Controller (JWT Protected)",
+			"item": [
+				{
+					"name": "1. [POST] Create Card (Tokenization & Save)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{X_API_KEY}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clientId\": \"8cc8f2f2-80a9-4973-be96-55f1b48eb9d6\",\n    \"cardNumber\": \"4000056655665556\",\n    \"cvv\": \"123\",\n    \"expirationMonth\": \"12\",\n    \"expirationYear\": \"26\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{domain}}/api/v1/card",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"card"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. [GET] Get All Cards for Client",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/card/get-all",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"card",
+								"get-all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. [GET] Get Card By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/card/{{CARD_ID}}",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"card",
+								"{{CARD_ID}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{JWT_TOKEN}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "Cart Controller (JWT Protected)",
+			"item": [
+				{
+					"name": "1. [POST] Add Item to Cart",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": \"{{PRODUCT_ID}}\",\n    \"quantity\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{domain}}/api/v1/cart",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cart"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{JWT_TOKEN}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "Orders Controller (JWT Protected)",
+			"item": [
+				{
+					"name": "1. [POST] Create Order (from Cart)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tokenizedCardId\": \"{{CARD_ID}}\",\n    \"deliveryAddress\": \"Avenida Principal, Casa #10, Los Palos Grandes\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{domain}}/api/v1/orders",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. [POST] Pay Order",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tokenizedCardId\": \"{{CARD_ID}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{domain}}/api/v1/orders/{{ORDER_ID}}/pay",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{ORDER_ID}}",
+								"pay"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. [GET] Search Order by Client",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/orders",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{JWT_TOKEN}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "Products Controller (JWT Protected)",
+			"item": [
+				{
+					"name": "1. [POST] Create Product (Admin Only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{JWT_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"partNumber\": \"MED-102\",\n    \"category\": \"Medicamentos\",\n    \"stock\": 100,\n    \"name\": \"Acetaminofen 500mg\"\n}"
+						},
+						"url": {
+							"raw": "{{domain}}/api/v1/products",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. [GET] Search Products (Keyword)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{JWT_TOKEN}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{domain}}/api/v1/products/search?keyword=Ace",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"search"
+							],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "Ace"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. [GET] History Search Products (Keyword)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/search-log/history",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"search-log",
+								"history"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{JWT_TOKEN}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "Preferences Controller (JWT Protected)",
+			"item": [
+				{
+					"name": "1. [POST] Create New Preference (Admin Only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{JWT_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"prefKey\": \"new.admin.flag\",\n    \"prefValue\": \"true\",\n    \"dataType\": \"BOOLEAN\"\n}"
+						},
+						"url": {
+							"raw": "{{domain}}/api/v1/preferences",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"preferences"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. [PUT] Update Preference Value (Admin Only)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{JWT_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"prefKey\": \"payment.rejection_rate\",\n    \"prefValue\": \"50\",\n    \"dataType\": \"INTEGER\"\n}"
+						},
+						"url": {
+							"raw": "{{domain}}/api/v1/preferences/payment.rejection_rate",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"preferences",
+								"payment.rejection_rate"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{JWT_TOKEN}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "Tokenization Controller (API Key)",
+			"item": [
+				{
+					"name": "1. [POST] Tokenize Card (Stand-alone)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-API-KEY",
+								"value": "{{X_API_KEY}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clientId\": \"33333333-3333-3333-3333-333333333333\",\n    \"cardNumber\": \"49927398716\",\n    \"cvv\": \"123\",\n    \"expirationMonth\": \"12\",\n    \"expirationYear\": \"26\"\n}"
+						},
+						"url": {
+							"raw": "{{domain}}/api/v1/tokenize",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tokenize"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Ping Controller (Public)",
+			"item": [
+				{
+					"name": "1. [GET] Health Check (Ping)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/ping",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ping"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "domain",
+			"value": "http://localhost:8080",
+			"description": "Dominio base del servidor de la API."
+		},
+		{
+			"key": "JWT_TOKEN",
+			"value": "YOUR_GENERATED_JWT_TOKEN",
+			"description": "Token JWT obtenido después del login (para autenticación Bearer)."
+		},
+		{
+			"key": "X_API_KEY",
+			"value": "A6gV5hSj2pLq9zX1oC3fE8yD4bN7mK0r",
+			"description": "Clave de autenticación para el servicio de tokenización."
+		},
+		{
+			"key": "CARD_ID",
+			"value": "00000000-0000-0000-0000-000000000001"
+		},
+		{
+			"key": "PRODUCT_ID",
+			"value": "11111111-1111-1111-1111-111111111111"
+		},
+		{
+			"key": "ORDER_ID",
+			"value": "22222222-2222-2222-2222-222222222222"
+		}
+	]
+}

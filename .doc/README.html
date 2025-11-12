@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Documentación de la API Gateway - Farmatodo</title>
+</head>
+<body>
+
+<h1>Documentación de la API Gateway - Farmatodo</h1>
+<p>Esta documentación detalla los endpoints disponibles para la gestión de usuarios, tarjetas, carrito, pedidos y configuración del sistema.</p>
+
+<hr>
+
+<h2>Estructura de Respuesta Estandarizada</h2>
+<p>Todas las respuestas de la API utilizan un formato JSON genérico que envuelve los datos del payload.</p>
+
+<h3>Objeto Base: <code>ApiResponse&lt;T&gt;</code></h3>
+<table>
+    <thead>
+    <tr>
+        <th>Campo</th>
+        <th>Tipo</th>
+        <th>Descripción</th>
+        <th>Ejemplo</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td><code>error</code></td>
+        <td>Boolean</td>
+        <td><code>true</code> si la operación falló, <code>false</code> si fue exitosa.</td>
+        <td><code>false</code></td>
+    </tr>
+    <tr>
+        <td><code>status</code></td>
+        <td>Integer</td>
+        <td>Código de estado HTTP retornado.</td>
+        <td><code>200</code></td>
+    </tr>
+    <tr>
+        <td><code>message</code></td>
+        <td>String</td>
+        <td>Mensaje descriptivo del resultado de la operación.</td>
+        <td><code>"Autenticación exitosa."</code></td>
+    </tr>
+    <tr>
+        <td><code>data</code></td>
+        <td>T</td>
+        <td>El payload de datos real de la respuesta. Su estructura varía según el endpoint.</td>
+        <td><code>{ ... }</code></td>
+    </tr>
+    </tbody>
+</table>
+
+<hr>
+
+<h2>1. Controlador de Autenticación (<code>/api/v1/auth</code>)</h2>
+<p>Endpoints para el registro de nuevos clientes y la obtención de tokens de acceso.</p>
+
+<h3>1.1. Registrar Cliente</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/auth/register</code></li>
+    <li><strong>Método:</strong> <code>POST</code></li>
+    <li><strong>Autenticación:</strong> Pública (Ninguna)</li>
+</ul>
+
+<h4>Cuerpo de la Petición (JSON)</h4>
+<pre><code>{
+    "username": "usuario.prueba",
+    "password": "PasswordSegura123",
+    "email": "prueba@ejemplo.com",
+    "firstName": "Juan",
+    "firstSurname": "Perez",
+    "middleName": null,
+    "secondSurname": null,
+    "phoneNumber": "5551234567"
+}</code></pre>
+
+<h4>Respuesta (201 CREATED)</h4>
+<pre><code>{
+    "error": false,
+    "status": 201,
+    "message": "Usuario registrado con éxito. ID: [UUID]",
+    "data": null
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>400 BAD REQUEST:</strong> Error de validación o si el usuario ya existe.</li>
+    <li><strong>500 INTERNAL SERVER ERROR:</strong> Fallo al asignar el rol por defecto.</li>
+</ul>
+
+<h3>1.2. Iniciar Sesión</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/auth/login</code></li>
+    <li><strong>Método:</strong> <code>POST</code></li>
+    <li><strong>Autenticación:</strong> Pública (Credenciales en cuerpo)</li>
+</ul>
+
+<h4>Cuerpo de la Petición (JSON)</h4>
+<pre><code>{
+    "username": "usuario.prueba",
+    "password": "PasswordSegura123"
+}</code></pre>
+
+<h4>Respuesta (200 OK)</h4>
+<pre><code>{
+    "error": false,
+    "status": 200,
+    "message": "Autenticación exitosa.",
+    "data": {
+        "token": "eyJhbGciOiJIUzI1NiI...",
+        "type": "Bearer"
+    }
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>401 UNAUTHORIZED:</strong> Credenciales de login inválidas.</li>
+</ul>
+
+<hr>
+
+<h2>2. Controlador de Tarjetas (<code>/api/v1/card</code>)</h2>
+<p>Endpoints para la gestión de tarjetas tokenizadas. Requiere JWT para GET y API Key para POST (Tokenización).</p>
+
+<h3>2.1. Tokenizar y Almacenar Tarjeta</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/card</code></li>
+    <li><strong>Método:</strong> <code>POST</code></li>
+    <li><strong>Autenticación:</strong> Header <code>X-API-KEY</code> (Requiere <code>ROLE_TOKENIZATION_SERVICE</code>)</li>
+</ul>
+
+<h4>Cuerpo de la Petición (JSON)</h4>
+<pre><code>{
+    "clientId": "[UUID del Cliente]",
+    "cardNumber": "4000123456789010",
+    "cvv": "123",
+    "expirationMonth": "12",
+    "expirationYear": "28"
+}</code></pre>
+
+<h4>Respuesta (201 CREATED)</h4>
+<pre><code>{
+    "error": false,
+    "status": 201,
+    "message": "Tarjeta tokenizada y almacenada con éxito.",
+    "data": {
+        "cardId": "[UUID de la tarjeta]",
+        "token": "9f86d081884c...",
+        "lastFourDigits": "9010",
+        "message": "Tarjeta tokenizada y almacenada con éxito."
+    }
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>400 BAD REQUEST:</strong> Datos de tarjeta inválidos (Luhn/CVV/Expiración) o rechazo en la tokenización.</li>
+    <li><strong>403 FORBIDDEN:</strong> Falta o API Key inválida (fuera del scope de este controlador, manejado en SecurityConfig).</li>
+    <li><strong>500 INTERNAL SERVER ERROR:</strong> Error de comunicación con el servicio de tokenización o fallo interno de cifrado/persistencia.</li>
+</ul>
+
+<h3>2.2. Obtener Todas las Tarjetas del Cliente</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/card/get-all</code></li>
+    <li><strong>Método:</strong> <code>GET</code></li>
+    <li><strong>Autenticación:</strong> Header <code>Authorization: Bearer [JWT]</code></li>
+</ul>
+
+<h4>Respuesta (200 OK)</h4>
+<pre><code>{
+    "error": false,
+    "status": 200,
+    "message": "Tarjetas recuperadas con éxito.",
+    "data": [
+        {
+            "cardId": "[UUID Tarjeta 1]",
+            "clientId": "[UUID Cliente]",
+            "token": "9f86d081884c...",
+            "lastFourDigits": "9010",
+            "creationDate": "2025-11-12T15:00:00Z",
+            "updateDate": null
+        }
+    ]
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>403 FORBIDDEN:</strong> JWT inválido o expirado.</li>
+</ul>
+
+<h3>2.3. Obtener Tarjeta por ID</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/card/{cardId}</code></li>
+    <li><strong>Método:</strong> <code>GET</code></li>
+    <li><strong>Autenticación:</strong> Header <code>Authorization: Bearer [JWT]</code></li>
+</ul>
+
+<h4>Respuesta (200 OK)</h4>
+<pre><code>{
+    "error": false,
+    "status": 200,
+    "message": "Detalles de la tarjeta recuperados.",
+    "data": {
+        "cardId": "[UUID Tarjeta]",
+        "clientId": "[UUID Cliente]",
+        "token": "9f86d081884c...",
+        "lastFourDigits": "9010",
+        "creationDate": "2025-11-12T15:00:00Z",
+        "updateDate": null
+    }
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>404 NOT FOUND:</strong> Tarjeta con <code>{cardId}</code> no existe.</li>
+    <li><strong>403 FORBIDDEN:</strong> Tarjeta existe, pero no pertenece al cliente autenticado.</li>
+</ul>
+
+<hr>
+
+<h2>3. Controlador de Carrito (<code>/api/v1/cart</code>)</h2>
+<p>Endpoints para la gestión de productos en el carrito de compras.</p>
+
+<h3>3.1. Añadir/Actualizar Ítem en Carrito</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/cart</code></li>
+    <li><strong>Método:</strong> <code>POST</code></li>
+    <li><strong>Autenticación:</strong> Header <code>Authorization: Bearer [JWT]</code></li>
+</ul>
+
+<h4>Cuerpo de la Petición (JSON)</h4>
+<pre><code>{
+    "productId": "[UUID del Producto]",
+    "quantity": 2
+}</code></pre>
+
+<h4>Respuesta (200 OK)</h4>
+<pre><code>{
+    "error": false,
+    "status": 200,
+    "message": "Producto añadido/actualizado en el carrito.",
+    "data": {
+        "cartItemId": "[UUID Item Carrito]",
+        "clientId": "[UUID Cliente]",
+        "productId": "[UUID Producto]",
+        "productPartNumber": "SKU-123",
+        "quantity": 2
+    }
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>400 BAD REQUEST:</strong> Producto o cliente no encontrado, o cantidad inválida.</li>
+    <li><strong>403 FORBIDDEN:</strong> JWT inválido o expirado.</li>
+</ul>
+
+<hr>
+
+<h2>4. Controlador de Pedidos y Pagos (<code>/api/v1/orders</code>)</h2>
+<p>Endpoints para crear pedidos a partir del carrito y procesar pagos.</p>
+
+<h3>4.1. Crear Pedido desde Carrito</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/orders</code></li>
+    <li><strong>Método:</strong> <code>POST</code></li>
+    <li><strong>Autenticación:</strong> Header <code>Authorization: Bearer [JWT]</code></li>
+</ul>
+
+<h4>Cuerpo de la Petición (JSON)</h4>
+<pre><code>{
+    "tokenizedCardId": "[UUID Tarjeta Tokenizada]",
+    "deliveryAddress": "Avenida Siempre Viva 742"
+}</code></pre>
+
+<h4>Respuesta (201 CREATED)</h4>
+<pre><code>{
+    "error": false,
+    "status": 201,
+    "message": "Pedido creado exitosamente a partir del carrito. Pendiente de pago.",
+    "data": {
+        "orderId": "[UUID Pedido]",
+        "clientId": "[UUID Cliente]",
+        "tokenizedCardId": "[UUID Tarjeta]",
+        "totalAmount": 20.00,
+        "isBlockedForPayment": false,
+        "deliveryAddress": "Avenida Siempre Viva 742",
+        "items": [
+            { "productId": "[UUID Producto]", "quantity": 2 }
+        ]
+    }
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>400 BAD REQUEST:</strong> Carrito vacío, tarjeta tokenizada no encontrada, o dirección inválida.</li>
+    <li><strong>403 FORBIDDEN:</strong> JWT inválido o error de seguridad (tarjeta no pertenece al cliente).</li>
+    <li><strong>500 INTERNAL SERVER ERROR:</strong> Error al persistir la orden o limpiar el carrito.</li>
+</ul>
+
+<h3>4.2. Pagar Pedido</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/orders/{orderId}/pay</code></li>
+    <li><strong>Método:</strong> <code>POST</code></li>
+    <li><strong>Autenticación:</strong> Header <code>Authorization: Bearer [JWT]</code></li>
+</ul>
+
+<h4>Cuerpo de la Petición (JSON)</h4>
+<pre><code>{
+    "tokenizedCardId": "[UUID Tarjeta Tokenizada]"
+}</code></pre>
+
+<h4>Respuesta (200 OK - Éxito)</h4>
+<pre><code>{
+    "error": false,
+    "status": 200,
+    "message": "Pago procesado exitosamente. Estado: SUCCESS",
+    "data": {
+        "transactionId": "[UUID Transacción]",
+        "orderId": "[UUID Pedido]",
+        "amount": 20.00,
+        "status": "SUCCESS",
+        "correlationId": "[UUID Correlación]",
+        "transactionDate": "2025-11-12T15:05:00Z"
+    }
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>400 BAD REQUEST:</strong> Pedido no encontrado, pedido bloqueado (intentos agotados), o pago rechazado (simulación/proveedor).</li>
+    <li><strong>403 FORBIDDEN:</strong> Pedido no pertenece al cliente autenticado.</li>
+</ul>
+
+<hr>
+
+<h2>5. Controlador de Preferencias (<code>/api/v1/preferences</code>)</h2>
+<p>Endpoints para la gestión de la configuración dinámica del sistema (Preferencias).</p>
+
+<h3>5.1. Crear Preferencia</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/preferences</code></li>
+    <li><strong>Método:</strong> <code>POST</code></li>
+    <li><strong>Autenticación:</strong> Header <code>Authorization: Bearer [JWT]</code> (Asume <code>ROLE_ADMIN</code>)</li>
+</ul>
+
+<h4>Cuerpo de la Petición (JSON)</h4>
+<pre><code>{
+    "prefKey": "product.min_stock_visibility",
+    "prefValue": "5",
+    "dataType": "INTEGER"
+}</code></pre>
+
+<h4>Respuesta (201 CREATED)</h4>
+<pre><code>{
+    "error": false,
+    "status": 201,
+    "message": "Preferencia 'product.min_stock_visibility' creada con éxito.",
+    "data": { ... SystemPreference Object ... }
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>409 CONFLICT:</strong> La clave de preferencia ya existe.</li>
+</ul>
+
+<h3>5.2. Actualizar Preferencia</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/preferences/{prefKey}</code></li>
+    <li><strong>Método:</strong> <code>PUT</code></li>
+    <li><strong>Autenticación:</strong> Header <code>Authorization: Bearer [JWT]</code> (Asume <code>ROLE_ADMIN</code>)</li>
+</ul>
+
+<h4>Cuerpo de la Petición (JSON)</h4>
+<pre><code>{
+    "prefKey": "product.min_stock_visibility",
+    "prefValue": "10",
+    "dataType": "INTEGER"
+}</code></pre>
+
+<h4>Respuesta (200 OK)</h4>
+<pre><code>{
+    "error": false,
+    "status": 200,
+    "message": "Preferencia 'product.min_stock_visibility' actualizada con éxito.",
+    "data": { ... SystemPreference Object Actualizado ... }
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>404 NOT FOUND:</strong> La clave de preferencia no existe.</li>
+</ul>
+
+<hr>
+
+<h2>6. Controlador de Productos (<code>/api/v1/products</code>)</h2>
+<p>Endpoints para la gestión de productos y su búsqueda.</p>
+
+<h3>6.1. Crear Producto</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/products</code></li>
+    <li><strong>Método:</strong> <code>POST</code></li>
+    <li><strong>Autenticación:</strong> Header <code>Authorization: Bearer [JWT]</code> (Asume <code>ROLE_ADMIN</code>)</li>
+</ul>
+
+<h4>Cuerpo de la Petición (JSON)</h4>
+<pre><code>{
+    "partNumber": "SKU-12345",
+    "name": "Ibuprofeno 400mg",
+    "category": "Medicina",
+    "stock": 150
+}</code></pre>
+
+<h4>Respuesta (201 CREATED)</h4>
+<pre><code>{
+    "error": false,
+    "status": 201,
+    "message": "Producto creado exitosamente. ID: [UUID]",
+    "data": { ... Product Object ... }
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>400 BAD REQUEST:</strong> Número de parte ya existe.</li>
+</ul>
+
+<h3>6.2. Buscar Productos</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/products/search?keyword={keyword}</code></li>
+    <li><strong>Método:</strong> <code>GET</code></li>
+    <li><strong>Autenticación:</strong> Header <code>Authorization: Bearer [JWT]</code></li>
+</ul>
+
+<h4>Respuesta (200 OK)</h4>
+<pre><code>{
+    "error": false,
+    "status": 200,
+    "message": "Búsqueda exitosa. Se encontraron X productos.",
+    "data": [
+        { ... Product Object 1 ... },
+        { ... Product Object 2 ... }
+    ]
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>400 BAD REQUEST:</strong> Parámetro <code>keyword</code> faltante o vacío.</li>
+</ul>
+
+<hr>
+
+<h2>7. Controlador de Salud (<code>/api/v1/ping</code>)</h2>
+<p>Endpoint para verificar que el servicio esté en línea.</p>
+
+<h3>7.1. Ping</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/ping</code></li>
+    <li><strong>Método:</strong> <code>GET</code></li>
+    <li><strong>Autenticación:</strong> Pública (Ninguna)</li>
+</ul>
+
+<h4>Respuesta (200 OK)</h4>
+<pre><code>{
+    "error": false,
+    "status": 200,
+    "message": "Servicio en línea",
+    "data": "pong"
+}</code></pre>
+
+<hr>
+
+<h2>8. Controlador de Tokenización (<code>/api/v1/tokenize</code>)</h2>
+<p>Endpoint que simula el proveedor de tokenización externa. Solo para uso interno.</p>
+
+<h3>8.1. Tokenizar Tarjeta (Simulado)</h3>
+<ul>
+    <li><strong>Ruta:</strong> <code>/api/v1/tokenize</code></li>
+    <li><strong>Método:</strong> <code>POST</code></li>
+    <li><strong>Autenticación:</strong> Header <code>X-API-KEY</code> (Requiere <code>ROLE_TOKENIZATION_SERVICE</code>)</li>
+</ul>
+
+<h4>Cuerpo de la Petición (JSON)</h4>
+<pre><code>{
+    "clientId": "[UUID del Cliente]",
+    "cardNumber": "4000123456789010",
+    "cvv": "123",
+    "expirationMonth": "12",
+    "expirationYear": "28"
+}</code></pre>
+
+<h4>Respuesta (200 OK)</h4>
+<pre><code>{
+    "error": false,
+    "status": 200,
+    "message": "Tokenización y cifrado exitosos.",
+    "data": {
+        "clientId": "[UUID Cliente]",
+        "token": "9f86d081884c...",
+        "lastFourDigits": "9010",
+        "expirationDateEncrypted": "jGkH8A1..."
+    }
+}</code></pre>
+
+<h4>Posibles Errores</h4>
+<ul>
+    <li><strong>400 BAD REQUEST:</strong> Datos de tarjeta inválidos o rechazo simulado.</li>
+    <li><strong>500 INTERNAL SERVER ERROR:</strong> Error de cifrado o hashing interno.</li>
+</ul>
+
+</body>
+</html>
