@@ -149,11 +149,11 @@ es utilizar la colección de postman para consultar.
 
 ## Diagrama de Arquitectura
 
-![Diagrama de Arquitectura](.doc/Diagrama de Arquitectura.jpg)
+![Diagrama de Arquitectura](.doc/diagrama-de-arquitectura.jpg)
 
 ## Diagrama del Modelo Relacional
 
-![Diagrama de Arquitectura](.doc/Modelo Relacional.png)
+![Diagrama de Arquitectura](.doc/modelo-relacional.png)
 
 # Detalle de la Implementación de Seguridad
 
