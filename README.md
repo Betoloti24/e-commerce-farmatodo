@@ -1,6 +1,6 @@
 # E-COMMERCE FARMATODO
 
-API REST que simula un comercio electronico como farmatodo, implementando principalmente la tokenización de tarjetas de pago, autenticación por JWT y API TOKEN, 
+API REST que simula un comercio electronico como el de farmatodo, implementando principalmente la tokenización de tarjetas de pago, autenticación por JWT y API TOKEN, 
 asi como servicios para gestionar productos, ordenes de compra, carritos de compra y pagos de pedidos.
 
 [Link de la Aplicación Desplegada](https://apigetway-542926251567.us-central1.run.app)
