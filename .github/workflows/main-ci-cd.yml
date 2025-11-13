@@ -1,0 +1,88 @@
+name: CI/CD a GCP Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: iron-gizmo-477919-p9
+  REGION: us-central1
+  REPO_NAME: farmatodo-repo
+  SERVICE_NAME: apigetway-service
+  IMAGE_NAME: apigetway
+  IMAGE_URL: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout Código Fuente
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # =========================================================
+      # 1. INTEGRACIÓN CONTINUA (CI)
+      # =========================================================
+
+      - name: Compilar y Empaquetar JAR (Maven)
+        run: mvn clean package -DskipTests
+        # -DskipTests para compilación,
+        # aquí deberían ejecutarse las pruebas unitarias.
+
+      # =========================================================
+      # 2. AUTENTICACIÓN Y REGISTRO DE ARTEFACTOS
+      # =========================================================
+
+      - name: Autenticar con Google Cloud
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Configurar Docker para Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Construir la Imagen Docker
+        run: |
+          # El archivo JAR debe ser renombrado si no coincide con el Dockerfile
+          # Nota: Usamos la etiqueta 'latest'
+          docker build \
+            --tag ${{ env.IMAGE_URL }} \
+            --file Dockerfile .
+
+      - name: Publicar Imagen en Artifact Registry
+        run: docker push ${{ env.IMAGE_URL }}
+
+      # =========================================================
+      # 3. DESPLIEGUE CONTINUO (CD) EN CLOUD RUN
+      # =========================================================
+
+      - name: Desplegar en Google Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE_URL }}
+          allow-unauthenticated: true
+          env_vars: |
+            DB_URL="${{ secrets.DB_URL }}"
+            DB_USERNAME="${{ secrets.DB_USERNAME }}"
+            DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY }}"
+            API_KEY_TOKENIZATION_SECRET="${{ secrets.API_KEY_TOKENIZATION_SECRET }}"
+            AES_CRYPTO_SECRET="${{ secrets.AES_CRYPTO_SECRET }}"
+            MAIL_USERNAME="${{ secrets.MAIL_USERNAME }}"
+            MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}"
+            TOKENIZATION_HEADER_NAME="${{ secrets.TOKENIZATION_HEADER_NAME }}"
+            TOKENIZATION_SERVICE_URL="${{ secrets.TOKENIZATION_SERVICE_URL }}"
