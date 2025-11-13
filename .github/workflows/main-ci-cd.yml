@@ -11,7 +11,6 @@ env:
   REPO_NAME: farmatodo-repo
   SERVICE_NAME: apigetway-service
   IMAGE_NAME: apigetway
-  IMAGE_URL: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest
 
 jobs:
   build-and-deploy:
@@ -54,15 +53,17 @@ jobs:
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
       - name: Construir la Imagen Docker
-        run: |
-          # El archivo JAR debe ser renombrado si no coincide con el Dockerfile
-          # Nota: Usamos la etiqueta 'latest'
+        run: | 
+          export IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest"
+          
           docker build \
-            --tag ${{ env.IMAGE_URL }} \
-            --file Dockerfile .
+          --tag $IMAGE_URL \
+          --file Dockerfile .
 
       - name: Publicar Imagen en Artifact Registry
-        run: docker push ${{ env.IMAGE_URL }}
+        run: |
+          export IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest"
+          docker push $IMAGE_URL
 
       # =========================================================
       # 3. DESPLIEGUE CONTINUO (CD) EN CLOUD RUN
