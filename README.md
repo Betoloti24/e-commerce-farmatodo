@@ -1,3 +1,12 @@
+# E-COMMERCE FARMATODO
+
+API REST que simula un comercio electronico como farmatodo, implementando principalmente la tokenización de tarjetas de pago, autenticación por JWT y API TOKEN, 
+asi como servicios para gestionar productos, ordenes de compra, carritos de compra y pagos de pedidos.
+
+[Link de la Aplicación Desplegada](https://apigetway-542926251567.us-central1.run.app)
+
+---
+
 # Stack Tecnológico 
 | Recurso         | Versión     | Descripción de uso                                                                                                          |
 |:----------------|:------------|:----------------------------------------------------------------------------------------------------------------------------|
@@ -44,7 +53,7 @@ Simplemente abra la aplicación de Postman y en el botón de `Import` añada el 
 
 ![Colección](.doc/collections.jpg)
 
-Luego de esto, entra a la sección de `Variables` en la carpeta raiz, y configura el valor de X_API_KEY, ya que el resto de los valores se establecen luego de ejecutar la aplicación.
+Luego de esto, entra a la sección de `Variables` en la carpeta raiz, y configura el valor de X_API_KEY, ya que el resto de los valores se establecen al interactuar con la aplicación.
 
 ## 3.0 Instalación con IntelliJ V 2025.2.4
 
@@ -78,6 +87,7 @@ Puedes tener cualquier versión estable del IntelliJ que soporte las versiones d
 ```
 
 **NOTA 1:** `Si alguna de las variables está mal parametrizada, el sistema puede no ejecutarse o en su defecto fallar en algunas funcionalidades.`
+
 **NOTA 2:** `El valor de security.api-key.tokenization, debe ser igual al establecido en la variable de colección en Postman.`
 
 3. Asegurse de tener seleccionado en la sección de ejecución el archivo principal del proyecto y no el de pruebas `(ApigetwayApplication.java)`.
@@ -142,10 +152,63 @@ docker run -d \
 Al finalizar la ejecución, debería arrojar una clave hash que identifica el contenedor creado, y que ya se encuentra en ejecución, simplemente queda 
 es utilizar la colección de postman para consultar. 
 
+## 3.2 Despliegue en GCP
+
+Se va a tomar en cuenta que se tiene ya instalado Google Cloud SDK para la ejecución de las instrucciones para Google Cloud; así como el empaquetado del
+proyecto descrito en pasos anteriores *(Instalación con Imagen Docker)*. 
+
+Adicionalmente, se tiene que tener acceso a una cuenta de Google Cloud con permisos y recursos para crear imagenes con Artifact Registry, además de habilitada
+la aplicacion de Cloud Run.
+
+Con esto en mente, dar acceso al Docker Desktop para que envíe imagenes a Artifact Registry, para proceder con crear la imagen y publicarla. Ejecute en la linea 
+de comandos o powershell.
+
+```batch
+
+    # 1. AUTENTICAR DOCKER CON GCP ARTIFACT REGISTRY
+    # Esto permite a Docker usar las credenciales de gcloud para subir la imagen.
+    gcloud auth configure-docker us-central1-docker.pkg.dev
+    
+    # 2. CONSTRUIR LA IMAGEN LOCAL
+    docker build -t farmatodo-apigetway-local .
+    
+    # 3. ETIQUETAR LA IMAGEN PARA EL REPOSITORIO REMOTO
+    docker tag [REGION]-docker.pkg.dev/[PROJECT_ID]/[REPO_NAME]/[IMAGE_NAME]:[TAG]
+    
+    # 4. PUBLICAR LA IMAGEN EN ARTIFACT REGISTRY
+    docker push [REGION]-docker.pkg.dev/[PROJECT_ID]/[REPO_NAME]/[IMAGE_NAME]:[TAG]
+
+```
+
+Luego de esto, hay que crear el contenedor en Cloud Run.
+
+```batch
+
+    # Variables del Proyecto
+    export PROJECT_ID="ID DEL PROYECTO"
+    export REGION="REGION DEL CONTENEDOR - IGUAL AL DE LA IMAGEN"
+    export SERVICE_NAME="NOMBRE DEL SERVICIO"
+    
+    # URL de la Imagen en Artifact Registry
+    export IMAGE_TAG="${REGION}-docker.pkg.dev/${PROJECT_ID}/[REPO_NAME]/[IMAGE_NAME]:[TAG]"
+
+    gcloud run deploy ${SERVICE_NAME} \
+        --image ${IMAGE_TAG} \
+        --region ${REGION} \
+        --platform managed \
+        --allow-unauthenticated \
+        --port 8080 \
+        --min-instances 0 \
+        --max-instances 10 \
+        --set-env-vars=DB_URL="",DB_USERNAME="",DB_PASSWORD="",JWT_SECRET_KEY="",API_KEY_TOKENIZATION_SECRET="",AES_CRYPTO_SECRET="",MAIL_USERNAME="",MAIL_PASSWORD="",TOKENIZATION_HEADER_NAME="",TOKENIZATION_SERVICE_URL=""
+
+```
+
+Debes actualizar los valores de cada variable de entorno, ejecutar, y esperar a que el servicio pase todo los test. Si no ha arrojado algún error, tienes el proyecto desplegado.
+
 ---
 
 # Diagramas de la Aplicación
-
 
 ## Diagrama de Arquitectura
 
